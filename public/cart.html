@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CuMartplace – My Cart</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .cart-table { width:100%; border-collapse:collapse; background:#fff; border-radius:10px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,.07); }
+    .cart-table th { background:#1a1a2e; color:#fff; padding:12px 16px; text-align:left; font-size:0.9rem; }
+    .cart-table td { padding:14px 16px; border-bottom:1px solid #f0f0f0; font-size:0.95rem; vertical-align:middle; }
+    .cart-table img { width:56px; height:56px; object-fit:cover; border-radius:6px; background:#eee; }
+    .cart-summary { background:#fff; border-radius:10px; padding:24px; margin-top:20px; box-shadow:0 2px 8px rgba(0,0,0,.07); text-align:right; }
+    .cart-summary .total { font-size:1.4rem; font-weight:700; color:#1a1a2e; margin-bottom:16px; }
+  </style>
+</head>
+<body>
+
+<nav id="nav-root"></nav>
+
+<div class="container">
+  <h1>My Cart</h1>
+  <div class="alert" id="alert"></div>
+  <div id="cartContent"></div>
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/components.js"></script>
+<script>
+  window.addEventListener('DOMContentLoaded', () => {
+    requireAuth();     // shared guard from components.js
+    renderNav('cart');
+    loadCart();
+  });
+
+  // GET /api/cart → CartController.getCart → CartModel.getItems (Model)
+  async function loadCart() {
+    showSpinner('cartContent');
+    try {
+      const data = await api.get('/cart');
+
+      if (!data.items.length) {
+        renderEmpty('cartContent', 'Your cart is empty.', '/', 'Start Shopping');
+        return;
+      }
+
+      document.getElementById('cartContent').innerHTML = `
+        <table class="cart-table">
+          <thead>
+            <tr>
+              <th>Product</th><th>Store</th><th>Price</th>
+              <th>Qty</th><th>Subtotal</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${data.items.map(item => `
+              <tr id="row-${item.cart_item_id}">
+                <td>
+                  <img src="${item.image_url || 'https://placehold.co/56x56?text=?'}" alt="${item.name}">
+                  <span style="margin-left:10px">${item.name}</span>
+                </td>
+                <td>${item.store_name}</td>
+                <td>${naira(item.price)}</td>
+                <td>
+                  <!--
+                    TODO: wire the onchange to updateQty()
+                    which calls PUT /api/cart/items/:cartItemId
+                  -->
+                  <input type="number" value="${item.quantity}" min="1"
+                    style="width:60px;padding:4px 6px;border:1.5px solid #ddd;border-radius:4px"
+                    onchange="updateQty(${item.cart_item_id}, this.value)">
+                </td>
+                <td>${naira(parseFloat(item.price) * item.quantity)}</td>
+                <td>
+                  <!--
+                    TODO: wire this button to removeItem()
+                    which calls DELETE /api/cart/items/:cartItemId
+                  -->
+                  <button class="btn btn-outline btn-sm"
+                    onclick="removeItem(${item.cart_item_id})">Remove</button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        <div class="cart-summary">
+          <div class="total">Total: ${naira(data.total)}</div>
+          <button class="btn btn-primary" onclick="checkout()">Proceed to Checkout</button>
+        </div>
+      `;
+
+    } catch (err) {
+      document.getElementById('cartContent').innerHTML = `<p style="color:red">${err.message}</p>`;
+    }
+  }
+
+  /**
+   * TODO — implement this function.
+   * PUT /api/cart/items/:cartItemId  { quantity }
+   * → CartController.updateItem → CartModel.updateItem (Model)
+   */
+  async function updateQty(cartItemId, qty) {
+    // TODO: call api.put then reload cart
+    showAlert('alert', 'TODO: updateQty not yet implemented', 'error');
+  }
+
+  /**
+   * TODO — implement this function.
+   * DELETE /api/cart/items/:cartItemId
+   * → CartController.removeItem → CartModel.removeItem (Model)
+   */
+  async function removeItem(cartItemId) {
+    // TODO: call api.delete then reload cart
+    showAlert('alert', 'TODO: removeItem not yet implemented', 'error');
+  }
+
+  // POST /api/orders → OrderController.checkout → OrderModel.createFromCart (Model)
+  async function checkout() {
+    try {
+      const order = await api.post('/orders', {});
+      showAlert('alert', `Order #${order.order_id} placed! Total: ${naira(order.total_amount)}`, 'success', 0);
+      setTimeout(() => window.location.href = '/orders.html', 2000);
+    } catch (err) {
+      showAlert('alert', err.message, 'error');
+    }
+  }
+</script>
+</body>
+</html>

@@ -3,6 +3,7 @@
     "rootDir": "./src",
     "outDir": "./dist",
     "module": "nodenext",
+    "moduleResolution": "nodenext",
     "target": "esnext",
     "types": ["node"],
 
@@ -10,12 +11,8 @@
     "declaration": true,
     "declarationMap": true,
 
-    // Stricter Typechecking Options
-    // "noUncheckedIndexedAccess": true, // Uncomment or set to false if 'prod is undefined' errors are too strict
     "exactOptionalPropertyTypes": true,
-
     "strict": true,
-    "jsx": "react-jsx",
     "verbatimModuleSyntax": true,
     "isolatedModules": true,
     "noUncheckedSideEffectImports": true,

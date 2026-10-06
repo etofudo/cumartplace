@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CuMartplace – My Orders</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .order-card { background:#fff; border-radius:10px; padding:20px; margin-bottom:16px; box-shadow:0 2px 8px rgba(0,0,0,.07); }
+    .order-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+    .order-id   { font-weight:700; }
+    .badge { padding:4px 10px; border-radius:20px; font-size:0.78rem; font-weight:600; }
+    .badge-pending   { background:#fff3cd; color:#856404; }
+    .badge-completed { background:#d4edda; color:#155724; }
+    .badge-cancelled { background:#f8d7da; color:#721c24; }
+    .order-items { font-size:0.88rem; color:#555; margin-top:8px; }
+    .order-items li { margin:3px 0; }
+  </style>
+</head>
+<body>
+
+<nav id="nav-root"></nav>
+
+<div class="container">
+  <h1>My Orders</h1>
+  <div id="ordersContent"></div>
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/components.js"></script>
+<script>
+  window.addEventListener('DOMContentLoaded', () => {
+    requireAuth();
+    renderNav('orders');
+    loadOrders();
+  });
+
+  // GET /api/orders → OrderController.getMyOrders → OrderModel.findByUser (Model)
+  async function loadOrders() {
+    showSpinner('ordersContent');
+    try {
+      const orders = await api.get('/orders');
+
+      if (!orders.length) {
+        renderEmpty('ordersContent', 'No orders yet.', '/', 'Start Shopping');
+        return;
+      }
+
+      document.getElementById('ordersContent').innerHTML = orders.map(order => `
+        <div class="order-card">
+          <div class="order-header">
+            <span class="order-id">Order #${order.order_id}</span>
+            ${statusBadge(order.order_status)}
+          </div>
+          <p style="font-size:0.88rem;color:#888">
+            Placed: ${new Date(order.created_at).toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'})}
+            &nbsp;·&nbsp; Total: <strong>${naira(order.total_amount)}</strong>
+          </p>
+          <ul class="order-items">
+            ${(order.items || []).map(i =>
+              `<li>• ${i.name} × ${i.quantity} @ ${naira(i.unit_price)}</li>`
+            ).join('')}
+          </ul>
+        </div>
+      `).join('');
+
+    } catch (err) {
+      document.getElementById('ordersContent').innerHTML =
+        `<p style="color:red">${err.message}</p>`;
+    }
+  }
+</script>
+</body>
+</html>

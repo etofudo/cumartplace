@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CuMartplace – Browse Products</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<!-- ── VIEW ── nav injected by renderNav() in components.js ─────────── -->
+<nav id="nav-root"></nav>
+
+<!-- ── VIEW ── Product listing ──────────────────────────────────────── -->
+<div class="container">
+  <h1>Browse Products</h1>
+
+  <div class="filter-bar">
+    <input type="text" id="search" placeholder="Search products…">
+    <select id="categoryFilter">
+      <option value="">All Categories</option>
+    </select>
+    <button class="btn btn-primary btn-sm" onclick="loadProducts()">Search</button>
+  </div>
+
+  <div id="productGrid" class="grid"></div>
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/components.js"></script>
+<script>
+  window.addEventListener('DOMContentLoaded', () => {
+    renderNav('products');
+
+    // Pre-fill store filter from URL e.g. stores.html links to /?store_id=2
+    const storeId = new URLSearchParams(location.search).get('store_id');
+
+    loadCategories();
+    loadProducts(storeId);
+  });
+
+  // GET /api/categories → CategoryController → CategoryModel.findAll
+  async function loadCategories() {
+    try {
+      const cats = await api.get('/categories');
+      const sel  = document.getElementById('categoryFilter');
+      cats.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.category_id;
+        opt.textContent = c.name;
+        sel.appendChild(opt);
+      });
+    } catch (err) {
+      console.error('loadCategories:', err.message);
+    }
+  }
+
+  // GET /api/products?search=&category_id=&store_id=
+  // → ProductController.getAll → ProductModel.findAll → SELECT from products (Model)
+  async function loadProducts(storeIdOverride = null) {
+    showSpinner('productGrid');
+
+    const search      = document.getElementById('search').value.trim();
+    const category_id = document.getElementById('categoryFilter').value;
+    const params      = new URLSearchParams();
+
+    if (search)           params.set('search',      search);
+    if (category_id)      params.set('category_id', category_id);
+    if (storeIdOverride)  params.set('store_id',    storeIdOverride);
+
+    const url = '/products' + ([...params].length ? '?' + params : '');
+
+    try {
+      const products = await api.get(url);
+      const grid = document.getElementById('productGrid');
+
+      if (!products.length) {
+        renderEmpty('productGrid', 'No products found.');
+        return;
+      }
+      // productCardHtml() lives in components.js — one definition, used everywhere
+      grid.innerHTML = products.map(productCardHtml).join('');
+    } catch (err) {
+      document.getElementById('productGrid').innerHTML =
+        `<p style="color:red">Error: ${err.message}</p>`;
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('search').addEventListener('keydown', e => {
+      if (e.key === 'Enter') loadProducts();
+    });
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CuMartplace – Stores</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .card .card-body p { font-size:0.85rem; color:#666; margin:6px 0 10px; line-height:1.5; }
+  </style>
+</head>
+<body>
+
+<nav id="nav-root"></nav>
+
+<div class="container">
+  <h1>All Stores</h1>
+  <div id="storeGrid" class="grid"></div>
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/components.js"></script>
+<script>
+  window.addEventListener('DOMContentLoaded', () => {
+    renderNav('stores');
+    loadStores();
+  });
+
+  // GET /api/stores → StoreController.getAll → StoreModel.findAll (Model)
+  async function loadStores() {
+    showSpinner('storeGrid');
+    try {
+      const stores = await api.get('/stores');
+      if (!stores.length) {
+        renderEmpty('storeGrid', 'No stores yet.');
+        return;
+      }
+      // storeCardHtml() lives in components.js
+      document.getElementById('storeGrid').innerHTML = stores.map(storeCardHtml).join('');
+    } catch (err) {
+      document.getElementById('storeGrid').innerHTML =
+        `<p style="color:red">Error: ${err.message}</p>`;
+    }
+  }
+</script>
+</body>
+</html>
